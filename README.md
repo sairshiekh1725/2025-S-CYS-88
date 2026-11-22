@@ -67,6 +67,180 @@ flowchart TD
     P -->|Yes| Q[Plot rewards and save or exit]
 ```
 
+## Important Code Sections
+
+The following code sections are the main parts of the reinforcement-learning
+implementation. They control learning, moves, rewards, training, and game
+rules.
+
+### 1. Command-Line Entry Point
+
+[`play.py`](play.py) is the starting point of the project. It reads command-line
+options and decides whether to create or load an agent:
+
+```python
+parser.add_argument("-a", "--agent_type", type=str, default="q")
+parser.add_argument("-l", "--load", action="store_true")
+parser.add_argument("-t", "--teacher_episodes", default=None, type=int)
+```
+
+- `-a q` selects the Q-learning agent.
+- `-l` loads the previously saved model.
+- `-t 5000` trains the agent for 5000 episodes.
+- No `-t` option starts human-versus-agent play.
+
+This file connects the command-line interface with the game and learning
+components.
+
+### 2. State and Valid Action Selection
+
+[`tictactoe/agent.py`](tictactoe/agent.py) converts the board into valid moves
+before the agent chooses an action:
+
+```python
+possible_actions = [
+    action for action in self.actions
+    if state[action[0] * 3 + action[1]] == '-'
+]
+```
+
+A state is a nine-character board string such as `"OX---O--X-"`. An action is
+a `(row, column)` position. This code prevents the agent from choosing an
+occupied square.
+
+### 3. Epsilon-Greedy Selection
+
+The same file chooses whether to explore or exploit learned knowledge:
+
+```python
+if random.random() < self.eps:
+    action = random.choice(possible_actions)
+else:
+    max_value = max(self.Q[action][state] for action in possible_actions)
+    best_actions = [
+        action for action in possible_actions
+        if self.Q[action][state] == max_value
+    ]
+    action = random.choice(best_actions)
+```
+
+With the default epsilon of `0.1`, the agent explores by taking a random valid
+move 10 percent of the time. Otherwise, it selects a move with the highest
+learned Q-value. This balances new moves with the agent's existing knowledge.
+
+### 4. Q-Learning Update
+
+The `update()` method in [`tictactoe/agent.py`](tictactoe/agent.py) is the
+main learning operation:
+
+```python
+if next_state is not None:
+    possible_actions = [
+        action for action in self.actions
+        if next_state[action[0] * 3 + action[1]] == '-'
+    ]
+    target = reward + self.gamma * max(
+        self.Q[action][next_state]
+        for action in possible_actions
+    )
+else:
+    target = reward
+
+self.Q[action][state] += self.alpha * (
+    target - self.Q[action][state]
+)
+```
+
+This formula updates `Q(state, action)` using the reward and the estimated
+value of the next state. A win receives `+1`, a loss receives `-1`, and a draw
+receives `0`. Better moves gradually receive higher Q-values.
+
+### 5. Game Loop and Reward Calculation
+
+[`tictactoe/game.py`](tictactoe/game.py) runs each episode. It applies the
+agent move, checks for a terminal result, allows the opponent to move, and
+calculates the intermediate reward:
+
+```python
+self.agentMove(previous_action)
+check = self.checkForEnd('O')
+
+if check != -1:
+    reward = check
+    break
+
+self.playerMove()
+check = self.checkForEnd('X')
+
+if check != -1:
+    reward = -1 * check
+    break
+
+reward = 0
+new_state = getStateKey(self.board)
+new_action = self.agent.get_action(new_state)
+self.agent.update(
+    previous_state,
+    new_state,
+    previous_action,
+    new_action,
+    reward
+)
+```
+
+This loop creates the state, action, reward, and next-state information needed
+by Q-learning.
+
+### 6. Win and Draw Detection
+
+The optimized win check in [`tictactoe/game.py`](tictactoe/game.py) compares
+all eight possible winning lines:
+
+```python
+WIN_LINES = (
+    ((0, 0), (0, 1), (0, 2)),
+    ((1, 0), (1, 1), (1, 2)),
+    ((2, 0), (2, 1), (2, 2)),
+    ((0, 0), (1, 0), (2, 0)),
+    ((0, 1), (1, 1), (2, 1)),
+    ((0, 2), (1, 2), (2, 2)),
+    ((0, 0), (1, 1), (2, 2)),
+    ((0, 2), (1, 1), (2, 0)),
+)
+```
+
+The game ends when all three positions in a line contain the same player token.
+The draw check returns true when no empty square remains.
+
+### 7. Automated Teacher
+
+[`tictactoe/teacher.py`](tictactoe/teacher.py) trains the agent by selecting
+X moves:
+
+```python
+if random.random() > self.ability_level:
+    return self.randomMove(board)
+
+return (
+    self.win(board)
+    or self.blockWin(board)
+    or self.fork(board)
+    or self.blockFork(board)
+    or self.center(board)
+    or self.corner(board)
+    or self.sideEmpty(board)
+    or self.randomMove(board)
+)
+```
+
+The teacher follows a priority strategy: win, block, create or block a fork,
+take the center or corner, take a side, and otherwise choose randomly. It also
+uses a 10-percent random-move probability so training includes varied results.
+
+These sections are the core of the project because they define the complete
+learning cycle: observe a state, choose an action, play, receive a reward,
+update the Q-table, and repeat.
+
 ### State
 
 The 3×3 board is converted into a nine-character string. `-` represents an
@@ -243,9 +417,6 @@ The optimized implementation includes:
 - automatic creation of the model-save directory
 - focused unit tests
 
-The complete semester-project report is available in
-[FINAL_REPORT.docx](/D:/cep/AI-Tic-Tac-Toe/FINAL_REPORT.docx).
-
 ## Semester Project Summary
 
 The project demonstrates:
@@ -260,13 +431,3 @@ The project demonstrates:
 
 The complete Tic-Tac-Toe state space is small, so Q-learning can be trained
 quickly and the learned policy can be saved for later use.
-
-## Authors and Ownership
-
-- **Project owner and author:** SAIR ZEESHAN
-- **Original source attribution:** Muskan Paliwal
-- **Original repository:** https://github.com/MuskanPaliwal/AI-Tic-Tac-Toe
-
-The original MIT license remains applicable to the source code derived from
-the original repository. The semester-project implementation and report belong
-to SAIR ZEESHAN.
