@@ -13,9 +13,8 @@ train, and test.
 |---|---|
 | Project | AI Tic-Tac-Toe using Reinforcement Learning |
 | Project owner and author | SAIR ZEESHAN |
-| Original code source | Muskan Paliwal |
 | Programming language | Python |
-| Algorithms | Q-learning and SARSA |
+| Algorithms | Q-learning |
 | Recommended demonstration | Q-learning |
 | License | MIT |
 
