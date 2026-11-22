@@ -2,7 +2,7 @@ import argparse
 import os
 import pickle
 import sys
-import numpy as np
+import itertools
 import matplotlib.pylab as plt
 
 from tictactoe.agent import Qlearner, SARSAlearner
@@ -12,7 +12,7 @@ from tictactoe.game import Game
 
 def plot_agent_reward(rewards):
     """ Function to plot agent's accumulated reward vs. iteration """
-    plt.plot(np.cumsum(rewards))
+    plt.plot(list(itertools.accumulate(rewards)))
     plt.title('Agent Cumulative Reward vs. Iteration')
     plt.ylabel('Reward')
     plt.xlabel('Episode')

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import os
 import pickle
 import collections
-import numpy as np
 import random
 
 
@@ -53,19 +52,15 @@ class Learner(ABC):
         possible_actions = [a for a in self.actions if s[a[0]*3 + a[1]] == '-']
         if random.random() < self.eps:
             # Random choose.
-            action = possible_actions[random.randint(0,len(possible_actions)-1)]
+            action = random.choice(possible_actions)
         else:
             # Greedy choose.
-            values = np.array([self.Q[a][s] for a in possible_actions])
-            # Find location of max
-            ix_max = np.where(values == np.max(values))[0]
-            if len(ix_max) > 1:
-                # If multiple actions were max, then sample from them
-                ix_select = np.random.choice(ix_max, 1)[0]
-            else:
-                # If unique max action, select that one
-                ix_select = ix_max[0]
-            action = possible_actions[ix_select]
+            max_value = max(self.Q[a][s] for a in possible_actions)
+            best_actions = [
+                a for a in possible_actions
+                if self.Q[a][s] == max_value
+            ]
+            action = random.choice(best_actions)
 
         # update epsilon; geometric decay
         self.eps *= (1.-self.eps_decay)
@@ -74,8 +69,9 @@ class Learner(ABC):
 
     def save_agent(self, path):
         """ Pickle the agent object instance to save the agent's state. """
-        if os.path.isfile(path):
-            os.remove(path)
+        directory = os.path.dirname(path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
         with open(path, 'wb') as f:
             pickle.dump(self, f)
 

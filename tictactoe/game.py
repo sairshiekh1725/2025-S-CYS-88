@@ -1,6 +1,18 @@
 import random
 
 
+WIN_LINES = (
+    ((0, 0), (0, 1), (0, 2)),
+    ((1, 0), (1, 1), (1, 2)),
+    ((2, 0), (2, 1), (2, 2)),
+    ((0, 0), (1, 0), (2, 0)),
+    ((0, 1), (1, 1), (2, 1)),
+    ((0, 2), (1, 2), (2, 2)),
+    ((0, 0), (1, 1), (2, 2)),
+    ((0, 2), (1, 1), (2, 0)),
+)
+
+
 class Game:
     """ The game class. New instance created for each new game. """
     def __init__(self, agent, teacher=None):
@@ -23,11 +35,12 @@ class Game:
                              "in the format row,col: ")
                 print('\n')
                 try:
-                    row, col = int(move[0]), int(move[2])
-                except ValueError:
+                    row_text, col_text = move.split(',')
+                    row, col = int(row_text.strip()), int(col_text.strip())
+                except (ValueError, AttributeError):
                     print("INVALID INPUT! Please use the correct format.")
                     continue
-                if row not in range(3) or col not in range(3) or not self.board[row][col] == '-':
+                if row not in range(3) or col not in range(3) or self.board[row][col] != '-':
                     print("INVALID MOVE! Choose again.")
                     continue
                 self.board[row][col] = 'X'
@@ -49,16 +62,8 @@ class Game:
         key : string
             token of most recent player. Either 'O' or 'X'
         """
-        # check for player win on diagonals
-        a = [self.board[0][0], self.board[1][1], self.board[2][2]]
-        b = [self.board[0][2], self.board[1][1], self.board[2][0]]
-        if a.count(key) == 3 or b.count(key) == 3:
-            return True
-        # check for player win on rows/columns
-        for i in range(3):
-            col = [self.board[0][i], self.board[1][i], self.board[2][i]]
-            row = [self.board[i][0], self.board[i][1], self.board[i][2]]
-            if col.count(key) == 3 or row.count(key) == 3:
+        for line in WIN_LINES:
+            if all(self.board[row][col] == key for row, col in line):
                 return True
         return False
 
@@ -67,12 +72,7 @@ class Game:
         Check to see whether the game has ended in a draw. Returns a
         boolean holding truth value.
         """
-        draw = True
-        for row in self.board:
-            for elt in row:
-                if elt == '-':
-                    draw = False
-        return draw
+        return all(elt != '-' for row in self.board for elt in row)
 
     def checkForEnd(self, key):
         """
@@ -201,11 +201,7 @@ def getStateKey(board):
     board : list of lists
         the current game board
     """
-    key = ''
-    for row in board:
-        for elt in row:
-            key += elt
-    return key
+    return ''.join(elt for row in board for elt in row)
 
 
 

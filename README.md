@@ -1,262 +1,273 @@
-# AI_Tic-Tac-Toe
-Contains steps for the creation of an Artificial Bot which plays Tic-Tac-Toe intelligently. Try it:[AI_Tic-Tac-Toe](https://muskanpaliwal.github.io/AI-Tic-Tac-Toe)
+# AI Tic-Tac-Toe using Reinforcement Learning
 
+A 3×3 Tic-Tac-Toe project that uses reinforcement learning to train an agent
+to play against a human or an automated teacher.
 
-# Tic-Tac-Toe-minimax
-An implementation of Minimax AI Algorithm on Tic-Tac-Toe (or Noughts and Crosses) game.
-<p align="center">
-	<img src="preview/minimax_img.png"></img>
-</p>
+The project implements Q-learning and SARSA. Q-learning is the recommended
+algorithm for the semester demonstration because it is easier to explain,
+train, and test.
 
-## What is Minimax
-Minimax is an artificial intelligence applied in two player games, such as tic-tac-toe, checkers, chess and go. These games are known as zero-sum games, because in a mathematical representation: one player wins (+1) and other player loses (-1) or none of them wins (0).
+## Project Information
 
-## How it works
-The algorithm recursively search the best move that leads the *Max* player to win or not lose (draw). It considers the current state of the game and the available moves at that state, then for each valid move it plays (alternating *min* and *max*) until it finds a terminal state (win, draw or lose).
+| Item | Details |
+|---|---|
+| Project | AI Tic-Tac-Toe using Reinforcement Learning |
+| Project owner and author | SAIR ZEESHAN |
+| Original code source | Muskan Paliwal |
+| Programming language | Python |
+| Algorithms | Q-learning and SARSA |
+| Recommended demonstration | Q-learning |
+| License | MIT |
 
-## Understanding the Algorithm
-The algorithm was studied by the book Algorithms in a Nutshell (George Heineman; Gary Pollice; Stanley Selkow, 2009). Pseudocode (adapted):
+The original MIT-licensed source code is preserved with its attribution.
+This semester project and its optimized implementation are owned and
+documented by SAIR ZEESHAN.
 
-```
-minimax(state, depth, player)
+## Project Files
 
-	if (player = max) then
-		best = [null, -infinity]
-	else
-		best = [null, +infinity]
-
-	if (depth = 0 or gameover) then
-		score = evaluate this state for player
-		return [null, score]
-
-	for each valid move m for player in state s do
-		execute move m on s
-		[move, score] = minimax(s, depth - 1, -player)
-                undo move m on s
-
-		if (player = max) then
-			if score > best.score then best = [move, score]
-		else
-			if score < best.score then best = [move, score]
-
-	return best
-end
-```
-
-Next, we'll see each part of this pseudocode with Python implementation. The Python implementation is available at this repository. First of all, consider this:
-> board = [
->	[0, 0, 0],
->	[0, 0, 0],
->	[0, 0, 0]
-> ]
-
-> MAX = +1
-
-> MIN = -1
-
-The MAX may be X or O and the MIN may be O or X, whatever it can be. The board is 3x3.
-
-```python
-def minimax(state, depth, player):
-```
-* **state**: the current board in tic-tac-toe (node)
-* **depth**: index of the node in the game tree
-* **player**: may be a *MAX* player or *MIN* player
-
-```python
-if player == MAX:
-	return [-1, -1, -infinity]
-else:
-	return [-1, -1, +infinity]
+```text
+AI-Tic-Tac-Toe/
+|-- play.py                  Command-line entry point
+|-- tictactoe/
+|   |-- agent.py             Learner and Q-table implementation
+|   |-- game.py              Board, turns, rules, and episode handling
+|   `-- teacher.py           Automated training opponent
+|-- tests/
+|   `-- test_project.py      Unit tests
+|-- trained_agents/
+|   `-- qlearner_agent.pkl   Saved and trained Q-learning agent
+|-- FINAL_REPORT.docx        Semester-project report
+|-- README.md
+|-- .gitignore
+`-- LICENSE
 ```
 
-Both players start with their worst score. If player is MAX, its score is -infinity. Else if player is MIN, its score is +infinity. **Note:** *infinity* is an alias for inf (from math module, in Python).
+## How It Works
 
-The best move on the board is [-1, -1] (row and column) for all.
-
-```python
-if depth == 0 or game_over(state):
-	score = evaluate(state)
-	return score
+```mermaid
+flowchart TD
+    A[Start play.py] --> B{Load or create agent}
+    B --> C{Training or human play}
+    C -->|Training| D[Create teacher]
+    C -->|Human play| E[Ask who moves first]
+    D --> F[Create a new game]
+    E --> F
+    F --> G[Convert the board into a state string]
+    G --> H[Epsilon-greedy action selection]
+    H --> I[Agent places O]
+    I --> J{Agent win or draw}
+    J -->|Yes| K[Calculate final reward]
+    J -->|No| L[Human or teacher places X]
+    L --> M{Human or teacher win or draw}
+    M -->|Yes| K
+    M -->|No| N[Reward equals 0]
+    N --> G
+    K --> O[Update Q-values]
+    O --> P{Episode limit reached or player quit}
+    P -->|No| F
+    P -->|Yes| Q[Plot rewards and save or exit]
 ```
 
-If the depth is equal to zero, then the board hasn't new empty cells to play. Or, if a player wins, then the game ended for MAX or MIN. So the score for that state will be returned.
+### State
 
-* If MAX won: return +1
-* If MIN won: return -1
-* Else: return 0 (draw)
+The 3×3 board is converted into a nine-character string. `-` represents an
+empty square, `X` represents the player or teacher, and `O` represents the
+computer agent.
 
-Now we'll see the main part of this code that contains recursion.
+For example:
 
-```python
-for cell in empty_cells(state):
-	x, y = cell[0], cell[1]
-	state[x][y] = player
-	score = minimax(state, depth - 1, -player)
-	state[x][y] = 0
-	score[0], score[1] = x, y
+```text
+O X -
+- O -
+X - -
 ```
 
-For each valid moves (empty cells):
-* **x**: receives cell row index
-* **y**: receives cell column index
-* **state[x][y]**: it's like board[available_row][available_col] receives MAX or MIN player
-* **score = minimax(state, depth - 1, -player)**:
-  * state: is the current board in recursion;
-  * depth -1: index of the next state;
-  * -player: if a player is MAX (+1) will be MIN (-1) and vice versa.
+is represented as:
 
-The move (+1 or -1) on the board is undo and the row, column are collected.
-
-The next step is compare the score with best.
-
-```python
-if player == MAX:
-	if score[2] > best[2]:
-		best = score
-else:
-	if score[2] < best[2]:
-		best = score
+```text
+"OX---O--X-"
 ```
 
-For MAX player, a bigger score will be received. For a MIN player, a lower score will be received. And in the end, the best move is returned. Final algorithm will be:
+### Action
 
-```python
-def minimax(state, depth, player):
-	if player == MAX:
-		best = [-1, -1, -infinity]
-	else:
-		best = [-1, -1, +infinity]
+An action is a `(row, column)` pair, such as `(1, 2)`. The agent considers
+only squares whose board position contains `-`.
 
-	if depth == 0 or game_over(state):
-		score = evaluate(state)
-		return [-1, -1, score]
+### Epsilon-greedy selection
 
-	for cell in empty_cells(state):
-		x, y = cell[0], cell[1]
-		state[x][y] = player
-		score = minimax(state, depth - 1, -player)
-		state[x][y] = 0
+The agent uses an epsilon-greedy policy:
 
-		score[0], score[1] = x, y
+- Choose a random valid move with probability `epsilon`
+- Choose the move with the largest Q-value otherwise
+- If multiple moves have the largest value, choose randomly among them
 
-		if player == MAX:
-			if score[2] > best[2]:
-				best = score
-		else:
-			if score[2] < best[2]:
-				best = score
+The default values are:
 
-	return best
+```text
+alpha = 0.5
+gamma = 0.9
+epsilon = 0.1
 ```
 
-## Game Tree
-Below, the best move is on the middle because the max value is on 2nd node on left.
+## Q-learning Update
 
-<p align="center">
-	<img src="preview/tic-tac-toe-minimax-game-tree.png"></img>
-</p>
+For a non-terminal state:
 
-Take a look that the depth is equal the valid moves on the board. The complete code is available in **py_version/**.
+```text
+Q(s,a) = Q(s,a) + alpha * (
+    reward + gamma * max(Q(s',a')) - Q(s,a)
+)
+```
 
-Simplified game tree:
+For a terminal state:
 
-<p align="center">
-	<img src="preview/simplified-g-tree.png"></img>
-</p>
+```text
+Q(s,a) = Q(s,a) + alpha * (reward - Q(s,a))
+```
 
-That tree has 11 nodes. The full game tree has 549.946 nodes! You can test it by putting a static global variable in your program and incrementing it for each minimax function call per turn.
-## Tic-Tac-Toe with Reinforcement Learning
-AI agent to play Tic-tac-toe using
-reinforcement learning. Both the SARSA and Q-learning RL
-algorithms are implemented. A user may teach the agent himself by
-playing the game for a couple of rounds, or he may apply an automated
-teacher agent. 
+The rewards used in the game are:
 
-## Code Structure
+```text
+Agent wins:  +1
+Draw:         0
+Agent loses: -1
+```
 
-#### Source Code
+The Q-learning update is in `tictactoe/agent.py`. The game loop is in
+`tictactoe/game.py`, and the automated training opponent is in
+`tictactoe/teacher.py`.
 
-The directory `tictactoe` contains the core source code.
-There are 3 main source code files:
-1. game.py
-2. agent.py
-3. teacher.py
+## Requirements
 
-I have implemented two RL agents that learn to play the game of tic-tac-toe:
-One follows the SARSA algorithm, and the other follows Q-learning.
-These agents are trained by a teacher agent that knows the optimal strategy;
-however, the teacher only follows this strategy with a given probability
-p at each turn. The rest of the time this teacher chooses randomly
-from the moves that are available, so that the agents are able to win on
-occasion and learn from these wins. To initialize the learning agent Q values,
-I make use of default dictionaries with default values of 0 such that the
-value for every state-action pair is initialized to 0.
+Python 3.10 or newer is recommended.
 
-The Q-learning and SARSA agents are implemented in `agent.py`.
-Each of the two learning agents inherit from a parent learner class; the key difference between the two is their Q-value update function. 
+Install the packages used by the current source code:
 
-The Teacher agent is implemented in `teacher.py`. 
-The teacher knows the optimal policy for each state presented; however, this agent only takes the optimal choice with a set probability.
+```text
+pip install matplotlib
+```
 
-In `game.py`, the main game class is found. 
-The Game class holds the state of each particular game instance, and it contains the majority of the main game functionality. 
-The main game loop can be found in the class's function playGame().
+NumPy is not required for the optimized Q-learning implementation. Action
+selection, Q-table updates, win detection, and cumulative reward plotting use
+Python lists, standard-library functions, and Matplotlib.
 
-#### Game Script
+Run commands from the project directory.
 
-To play the game (see "Running the Program" below for instructions) you will use the script called `play.py`. 
-This script is organized as follows. 
-The GameLearner class holds the state of the current game sequence, which will continue until the player choses to stop or the teacher has finished the designated number of episodes.
+## Installation
 
-## Running the Program
+```text
+git clone https://github.com/sairshiekh1725/AI-Tic-Tac-Toe.git
+cd AI-Tic-Tac-Toe
+pip install matplotlib
+```
 
+## Training
 
-To initialize a new agent and begin a new game loop, simply run:
+Initialize a new Q-learning agent and train it for 5000 episodes:
 
-    python play.py -a q                (Q-learner)
-    python play.py -a s                (Sarsa-learner)
+```text
+python play.py -a q -t 5000
+```
 
-This will initialize the game and allow you to train the agent manually
-by playing against the agent repeatedly. Be careful, however, as initializing
-a new agent will delete the state of the previous agents that were stored for
-the selected agent type. In the process of playing, you will be storing the
-new agent state with each game iteration.
+Load the saved Q-learning agent and train it for another 5000 episodes:
 
-#### Train a new agent automatically (via teacher agent)
-To initialize a new RL agent and train it automatically with a teacher agent,
-use the flag '-t' followed by the number of game iterations you would like to
-train for:
+```text
+python play.py -a q -l -t 5000
+```
 
-    python play.py -a q -t 5000        (Q-learner)
-    python play.py -a s -t 5000        (Sarsa-learner)
+Training data is saved as a Pickle file in:
 
-Again, be careful as this will overwrite previously-existing agents.
+```text
+trained_agents/qlearner_agent.pkl
+```
 
-#### Load a trained agent
-To load existing agents and play against them, run:
+The training process prints progress every 1000 episodes and displays the
+cumulative reward chart after training.
 
-    python play.py -a q -l             (Q-learner)
-    python play.py -a s -l             (Sarsa-learner)
+The project currently creates `trained_agents/` automatically before saving
+the agent.
 
+## Human Play
 
-I have trained an instance of each the Q-learner and Sarsa-learner agents
-and pickled them into .pkl files that are included here. These agents were
-trained by a teacher of level 0.9 for 100000 episodes, and they have learned
-to play considerably well. You can make use of these if you like, but they
-will be overwritten if you have initialized new agents.
+Load a trained Q-learning agent and play against it:
 
-#### Load a trained agent and train it further
-You can train existing agents further by loading them and teaching them, via
-a combination of '-t' and '-l':
+```text
+python play.py -a q -l
+```
 
-    python play.py -a q -l -t 5000     (Q-learner)
-    python play.py -a s -l -t 5000     (Sarsa-learner)
+Enter a move as `row,column`, where both values range from `0` to `2`.
 
-#### Load a trained agent and view reward history plot
-Finally, to load a stored agent and view a plot of its cumulative reward
-history, use '-l' in combination with '-p':
+For example:
 
-    python play.py -a q -l -p          (Q-learner)
-    python play.py -a s -l -p          (Sarsa-learner)
+```text
+Your move! Please select a row and column:
+1,2
+```
 
+## Teacher Strategy
+
+The teacher is not the learner. It follows a hierarchy of useful moves:
+
+1. Win if possible
+2. Block the agent from winning
+3. Create or block a fork
+4. Take the center
+5. Take a corner
+6. Take an empty side
+7. Use a random empty square
+
+The teacher makes a random move with probability `0.1` because its default
+ability level is `0.9`. This variation helps the learner encounter wins,
+losses, and draws.
+
+## Testing
+
+Run the automated test suite from the project directory:
+
+```text
+python -m unittest discover -s tests -v
+```
+
+The tests cover terminal Q-learning updates, model saving and loading, row
+and diagonal wins, draw detection, state-key conversion, and immediate teacher
+wins.
+
+## Optimizations
+
+The optimized implementation includes:
+
+- Python-based epsilon-greedy action selection instead of NumPy
+- `itertools.accumulate()` for cumulative reward plotting
+- a shared set of eight precomputed win lines
+- simpler draw and board-state conversion
+- robust `row,column` human input validation
+- automatic creation of the model-save directory
+- focused unit tests
+
+The complete semester-project report is available in
+[FINAL_REPORT.docx](/D:/cep/AI-Tic-Tac-Toe/FINAL_REPORT.docx).
+
+## Semester Project Summary
+
+The project demonstrates:
+
+- Reinforcement-learning states and actions
+- Exploration and exploitation
+- The Q-learning Bellman update
+- Episode-based training
+- Reward-based improvement
+- Model serialization and loading
+- Human-versus-agent gameplay
+
+The complete Tic-Tac-Toe state space is small, so Q-learning can be trained
+quickly and the learned policy can be saved for later use.
+
+## Authors and Ownership
+
+- **Project owner and author:** SAIR ZEESHAN
+- **Original source attribution:** Muskan Paliwal
+- **Original repository:** https://github.com/MuskanPaliwal/AI-Tic-Tac-Toe
+
+The original MIT license remains applicable to the source code derived from
+the original repository. The semester-project implementation and report belong
+to SAIR ZEESHAN.
